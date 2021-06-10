@@ -1,0 +1,16 @@
+{
+  "name": "tfjs-pipeline",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "pre-process": "scripts/pre-process.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "ljeff@us.ibm.com",
+  "license": "ISC",
+  "devDependencies": {
+    "jsonfile": "^6.1.0",
+    "xml-js": "^1.6.11"
+  }
+}
