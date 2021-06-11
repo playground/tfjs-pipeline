@@ -182,6 +182,43 @@ let build = {
       });
     });  
   },
+  train_model: () => {
+    return new Observable((observer) => {
+      const pipeline_config_path = process.env.npm_config_pipeline_config_path;
+      const model_dir = process.env.npm_config_model_dir;
+
+      let arg = `python ${__dirname}/model_main_tf2.py --pipeline_config_path=${pipeline_config_path} --model_dir=${model_dir} --alsologtostderr`;
+      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+        if(!err) {
+          console.log(stdout)
+          console.log(`done training model ${model_dir}`);
+          observer.next();
+          observer.complete();
+        } else {
+          console.log(`failed to train model ${model_dir}`, err);
+        }
+      });
+    });  
+  },
+  export_inference_graph: () => {
+    return new Observable((observer) => {
+      const trained_checkpoint_dir = process.env.npm_config_trained_checkpoint_dir;
+      const pipeline_config_path = process.env.npm_config_pipeline_config_path;
+      const output_directory = process.env.npm_config_output_directory;
+
+      let arg = `python ${__dirname}/exporter_main_v2.py --trained_checkpoint_dir=${trained_checkpoint_dir} --pipeline_config_path=${pipeline_config_path} --output_directory ${output_directory}`;
+      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+        if(!err) {
+          console.log(stdout)
+          console.log(`done generating ${output_directory}`);
+          observer.next();
+          observer.complete();
+        } else {
+          console.log(`failed to generate ${output_directory}`, err);
+        }
+      });
+    });  
+  },
   exit: (msg) => {
     console.log(msg);
     process.exit(0);
