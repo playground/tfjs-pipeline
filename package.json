@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "pre_process": "scripts/pre-process.js",
-    "build_all": "npm run pre_process --path=<PATH_TO_ASSETS --task=build_all --Origin=maximo",
-    "generate_tfrecord": "npm run pre_process --task=generate_tfrecord",
+    "build_all": "npm run pre_process --path=/Users/jeff/Downloads/Demo --task=build_all --Origin=maximo",
+    "generate_tfrecords": "npm run pre_process --task=generate_tfrecords",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "ljeff@us.ibm.com",

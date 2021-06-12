@@ -12,10 +12,10 @@ const task = process.env.npm_config_task || 'rename_maximo_assets';
 let build = {
   rename_maximo_assets: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_path;
+      const path = process.env.npm_config_image_dir;
       let count = 0;
       if(!path) {
-        build.exit('path is required, provide --path=...');
+        build.exit('path is required, provide --image_dir=...');
       }
       let json = jsonfile.readFileSync(`${path}/prop.json`);
       if (json) {
@@ -46,9 +46,9 @@ let build = {
   },
   partition_dataset: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_path;
+      const path = process.env.npm_config_image_dir;
     if(!path) {
-      build.exit('path is required, provide --path=...');
+      build.exit('path is required, provide --image_dir=...');
     }
     const train_ratio = process.env.npm_config_ratio || 0.9;
     let files = readdirSync(path);
@@ -81,12 +81,12 @@ let build = {
   },
   xml_to_csv: () => {
     return new Observable((observer) => {
-        const path = process.env.npm_config_path;
+      const path = process.env.npm_config_image_dir;
       const origin = process.env.npm_config_origin;
       let xmls, csv = '';
       let $call = [];
       if(!path || !origin) {
-        build.exit('path and orgin are required, provide --path=... --origin=...');
+        build.exit('path and orgin are required, provide --image_dir=... --origin=...');
       }
       ['train', 'test'].forEach((target) => {
         const dir = `${path}/${target}`;
@@ -155,27 +155,44 @@ let build = {
           .subscribe(() => {
             build.xml_to_csv()
             .subscribe(() => {
-              observer.next();
-              observer.complete();
+              build.generate_tfrecords()
+              .subscribe(() => {
+                observer.next();
+                observer.complete();
+              });  
             })
           })
         })
       }
     });
   },
-  generate_tfrecord: () => {
+  generate_tfrecords: () => {
     return new Observable((observer) => {
-      const csv_input = process.env.npm_config_csv_input;
       const image_dir = process.env.npm_config_image_dir;
-      const output_path = process.env.npm_config_output_path;
+      if(!image_dir) {
+        build.exit('--image_dir is required.')
+      }
+      let csv_input = `${image_dir}/train/labels.csv`;
+      let output_path = `${image_dir}/train/train.tfrecord`;
 
       let arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${image_dir} --output_path=${output_path}`;
       exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
         if(!err) {
           console.log(stdout)
           console.log(`done generating ${output_path}`);
-          observer.next();
-          observer.complete();
+          csv_input = `${image_dir}/test/labels.csv`;
+          output_path = `${image_dir}/test/train.tfrecord`;
+          arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${image_dir} --output_path=${output_path}`;
+          exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+            if(!err) {
+              console.log(stdout)
+              console.log(`done generating ${output_path}`);
+              observer.next();
+              observer.complete();
+            } else {
+              console.log(`failed to generate ${output_path}`, err);
+            }
+          });  
         } else {
           console.log(`failed to generate ${output_path}`, err);
         }
@@ -188,7 +205,7 @@ let build = {
       const model_dir = process.env.npm_config_model_dir;
 
       let arg = `python ${__dirname}/model_main_tf2.py --pipeline_config_path=${pipeline_config_path} --model_dir=${model_dir} --alsologtostderr`;
-      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+      let childProcess = exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
         if(!err) {
           console.log(stdout)
           console.log(`done training model ${model_dir}`);
@@ -198,6 +215,10 @@ let build = {
           console.log(`failed to train model ${model_dir}`, err);
         }
       });
+      childProcess.stdout.on('data', data => console.log(data));
+      childProcess.stderr.on('data', data => console.log(data));
+      // childProcess.stdout.pipe( process.stdout );
+      // childProcess.stderr.pipe( process.stderr );
     });  
   },
   export_inference_graph: () => {
