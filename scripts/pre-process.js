@@ -24,6 +24,41 @@ let build = {
           // console.log(info['original_file_name']);
           let type = /\.[0-9a-z]{1,5}$/i.exec(info.original_file_name)[0];
           let name = info.original_file_name.replace(type, '');
+          let idtuple = /^[^-]*/.exec(info._id)[0];
+          // console.log(`${path}/${info._id}${type}`, `${path}/${info.original_file_name}`)
+          // console.log(`${path}/${info._id}.xml`, `${path}/${name}.xml`)
+          if(existsSync(`${path}/${info._id}.xml`) && existsSync(`${path}/${info._id}${type}`)) {
+            renameSync(
+              `${path}/${info._id}${type}`, 
+              `${path}/${name}-${idtuple}${type}`);
+            renameSync(
+              `${path}/${info._id}.xml`, 
+              `${path}/${name}-${idtuple}.xml`);
+            count++;
+          }    
+        })
+        console.log(`renamed total of ${count} image files and ${count} xml files`)
+        observer.next();
+        observer.complete();
+      } else {
+        build.exit(json);
+      }
+    });
+  },
+  rename_maximo_assets2: () => {
+    return new Observable((observer) => {
+      const path = process.env.npm_config_image_dir;
+      let count = 0;
+      if(!path) {
+        build.exit('path is required, provide --image_dir=...');
+      }
+      let json = jsonfile.readFileSync(`${path}/prop.json`);
+      if (json) {
+        let fileInfo = JSON.parse(json['file_prop_info']);
+        fileInfo.map((info) => {
+          // console.log(info['original_file_name']);
+          let type = /\.[0-9a-z]{1,5}$/i.exec(info.original_file_name)[0];
+          let name = info.original_file_name.replace(type, '');
           // console.log(`${path}/${info._id}${type}`, `${path}/${info.original_file_name}`)
           // console.log(`${path}/${info._id}.xml`, `${path}/${name}.xml`)
           if(existsSync(`${path}/${info._id}.xml`) && existsSync(`${path}/${info._id}${type}`)) {
@@ -85,18 +120,20 @@ let build = {
       const origin = process.env.npm_config_origin;
       let xmls, csv = '';
       let $call = [];
-      if(!path || !origin) {
-        build.exit('path and orgin are required, provide --image_dir=... --origin=...');
+      if(!path) {
+        build.exit('path is required, provide --image_dir=... --origin=...');
       }
       ['train', 'test'].forEach((target) => {
         const dir = `${path}/${target}`;
         console.log(target, origin)
         let files = readdirSync(dir);
-          xmls = files.filter((file) => file.indexOf('.xml') > 0);
-          // console.log(xmls)
-          if(origin.toLowerCase() === 'maximo') {
-            $call.push(build.maximo(xmls, dir, path));
-          }
+        xmls = files.filter((file) => file.indexOf('.xml') > 0);
+        // console.log(xmls)
+        if(origin && origin.toLowerCase() === 'maximo') {
+          $call.push(build.maximo(xmls, dir, path));
+        } else {
+          $call.push(build.tfjs(xmls, dir, path));
+        }
       })
       forkJoin($call)
       .subscribe((data) => {
@@ -110,6 +147,28 @@ let build = {
       })
     });  
   },
+  tfjs: (xmls, dir, path) => {
+    return new Observable((observer) => {
+      let csv = 'filename,width,height,class,xmin,ymin,xmax,ymax\n';
+      xmls.forEach(async(name, i) => {
+        let xml = readFileSync(`${dir}/${name}`);
+        let xmljson = JSON.parse(convert.xml2json(xml, {compact: true, space: 2}));
+        // console.log(xmljson.annotation.object)
+        let filename = xmljson.annotation.filename._text;
+        let object = xmljson.annotation.object;
+        let size = xmljson.annotation.size;  
+        if(!Array.isArray(object)) {
+          object = [object];
+        }
+        object.forEach((obj) => {
+          let bbox = obj.bndbox;
+          csv += `${filename},${size.width._text},${size.height._text},${obj.name._text},${bbox.xmin._text},${bbox.ymin._text},${bbox.xmax._text},${bbox.ymax._text}\n`;
+        })  
+      })
+      observer.next(csv);
+      observer.complete();
+    });
+  }, 
   maximo: (xmls, dir, path) => {
     return new Observable((observer) => {
       let csv = 'filename,width,height,class,xmin,ymin,xmax,ymax\n';
@@ -148,7 +207,7 @@ let build = {
   build_all: () => {
     return new Observable((observer) => {
       const origin = process.env.npm_config_origin;
-      if(origin.toLowerCase() === 'maximo') {
+      if(origin && origin.toLowerCase() === 'maximo') {
         build.rename_maximo_assets()
         .subscribe(() => {
           build.partition_dataset()
@@ -163,7 +222,39 @@ let build = {
             })
           })
         })
+      } else {
+        build.partition_dataset()
+        .subscribe(() => {
+          build.xml_to_csv()
+          .subscribe(() => {
+            build.generate_tfrecords()
+            .subscribe(() => {
+              observer.next();
+              observer.complete();
+            });  
+          })
+        })
       }
+    });
+  },
+  tflite_converter: () => {
+    return new Observable((observer) => {
+      const saved_model_dir = process.env.npm_config_saved_model_dir;
+      const output_path = process.env.npm_config_output_path;
+      if(!saved_model_dir || !output_path) {
+        build.exit('--output_path & --saved_model_dir are required.')
+      }
+
+      let arg = `python ${__dirname}/tflite_converter.py --saved_model_dir=${saved_model_dir} --output_path=${output_path}`;
+      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+        if(!err) {
+          console.log(`done coverting saved model to ${output_path}`);
+          observer.next();
+          observer.complete();
+        } else {
+          console.log(`failed to generate ${output_path}`, err);
+        }
+      });
     });
   },
   generate_tfrecords: () => {
