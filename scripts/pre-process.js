@@ -10,6 +10,28 @@ exec = cp.exec;
 const task = process.env.npm_config_task || 'rename_maximo_assets';
 
 let build = {
+  resize_image: () => {
+    return new Observable((observer) => {
+      const image_dir = process.env.npm_config_image_dir;
+      const height = process.env.npm_config_height;
+      const width = process.env.npm_config_width;
+
+      if(!image_dir || !height || !width) {
+        build.exit('image_dir, height & width are required, provide --image_dir=...');
+      }
+      let arg = `python ${__dirname}/resize_images.py -d ${image_dir} -s ${width} ${height}`;
+      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+        if(!err) {
+          console.log(`done resizing ${image_dir}`);
+          observer.next();
+          observer.complete();
+        } else {
+          console.log(`failed to resize images ${image_dir}`, err);
+        }
+      });
+
+    });
+  },
   rename_maximo_assets: () => {
     return new Observable((observer) => {
       const path = process.env.npm_config_image_dir;
