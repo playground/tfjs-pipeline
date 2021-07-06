@@ -6,28 +6,32 @@ from __future__ import absolute_import
 
 import os
 import io
+import argparse
+
 import pandas as pd
 
-from tensorflow.python.framework.versions import VERSION
-if VERSION >= "2.0.0a0":
-    import tensorflow.compat.v1 as tf
-else:
-    import tensorflow as tf
+import tensorflow as tf
 
 from PIL import Image
 from object_detection.utils import dataset_util
 from collections import namedtuple, OrderedDict
 
-flags = tf.app.flags
-flags.DEFINE_string('csv_input', '', 'Path to the CSV input')
-flags.DEFINE_string('output_path', '', 'Path to output TFRecord')
-flags.DEFINE_string('image_dir', '', 'Path to images')
-FLAGS = flags.FLAGS
-
 
 def class_text_to_int(row_label):
-    if row_label == 'hard-hat':
+    if row_label == 'hard-hat' or row_label == 'hardhat':
         return 1
+    elif row_label == 'mask':
+        return 2
+    elif row_label == 'person':
+        return 3
+    elif row_label == 'vest':
+        return 4
+    elif row_label == 'head':
+        return 5
+    elif row_label == 'lab_coat':
+        return 6
+    elif row_label == 'badge':
+        return 7
     else:
         return 0
 
@@ -39,7 +43,7 @@ def split(df, group):
 
 
 def create_tf_example(group, path):
-    with tf.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
+    with tf.io.gfile.GFile(os.path.join(path, '{}'.format(group.filename)), 'rb') as fid:
         encoded_jpg = fid.read()
     encoded_jpg_io = io.BytesIO(encoded_jpg)
     image = Image.open(encoded_jpg_io)
@@ -79,20 +83,23 @@ def create_tf_example(group, path):
     return tf_example
 
 
-def main(_):
-    writer = tf.python_io.TFRecordWriter(FLAGS.output_path)
-    path = os.path.join(FLAGS.image_dir)
-    print('csv file', FLAGS.csv_input)
-    examples = pd.read_csv(FLAGS.csv_input)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Generate tfrecord")
+    parser.add_argument('-c', '--csv_input', type=str, required=True, help='Path to the CSV input')
+    parser.add_argument('-o', '--output_path', type=str, required=True, help='Path to output TFRecord')
+    parser.add_argument('-i', '--image_dir', type=str, required=True, help='Path to images')
+    args = parser.parse_args()
+
+    writer = tf.io.TFRecordWriter(args.output_path)
+    path = os.path.join(args.image_dir)
+    print('csv file', args.csv_input)
+    examples = pd.read_csv(args.csv_input)
     grouped = split(examples, 'filename')
     for group in grouped:
         tf_example = create_tf_example(group, path)
         writer.write(tf_example.SerializeToString())
 
     writer.close()
-    output_path = os.path.join(os.getcwd(), FLAGS.output_path)
+    output_path = os.path.join(os.getcwd(), args.output_path)
     print('Successfully created the TFRecords: {}'.format(output_path))
 
-
-if __name__ == '__main__':
-    tf.app.run()

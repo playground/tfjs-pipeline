@@ -5,6 +5,7 @@
 /tmp
 /out-tsc
 data
+out
 
 # dependencies
 node_modules
