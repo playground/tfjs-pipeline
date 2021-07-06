@@ -1,8 +1,8 @@
-# Tensorflow pipeline 
+# Tensorflow pipeline build with NodeJS
 
-This project aims to streamline the process of training of Tensorflow V2 deep neural network model from A to Z.  This project assumes you have already set up your system setup with the Python >= V3.5
+This project aims to streamline the process of training a Tensorflow V2 deep neural network model from A to Z.  This project assumes you have already set up your system and environment with the Python >= V3.5
 
-pre_process.js is script that provides the sub-processes that help you through the entire process from having a labeled data set to generating the inference graph with a saved model that can be used in your nodejs application.
+pre_process.js is script that provides the sub-processes that will help you through the entire process from labeling the dataset to generating the inference graph with a saved model that can be used in your nodejs application for inferencing or object detections.
 
 * Start with your image dataset
 * Resize images (depending on your use case, smaller images size speeds up training time)
@@ -13,31 +13,78 @@ pre_process.js is script that provides the sub-processes that help you through t
 * Train model
 * Generate inference graph from trained model 
 
-labelImg /Users/jeff/git_repo/sandbox/wu/playbox/ml/TensorFlow/workspace/training_demo/images
-python resize_images.py -d /Downloads/LFE/samples -s 800 600   
+## Step 1
+- Git clone git@github.com:playground/tfjs-pipelline.git
+- CD into tfjs-pipeline and run ```npm install```
+- Create a directory ```<my_dataset>``` for you image dataset anywhere on your machine
 
-npm run pre_process --task=build_all --image_dir=/Users/jeff/Downloads/Demo_Augmented --origin=maximmo
+## Step 2
+- In tfjs-pipelne directory, resize your images uniformly by runnning
 
-npm run pre_process --task=train_model --pipeline_config_path=/Users/jeff/Downloads/Demo/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/Users/jeff/Downloads/Demo/training
+  ```npm run pre_process --task=resize_image --image_dir=<my_dataset> --width=800 --height=600```
 
-npm run pre_process --trained_checkpoint_dir=/User/jeff/Downloads/Demo2/training --pipeline_config_path=/Users/jeff/Downloads/Demo2/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --output_directory=/Users/jeff/Downloads/Demo2/inference_graph --task=export_inference_graph
+## Step 3
+- Use one of the tools like lableImg, MVI(Maximo Visual Inspection) or any others to label and create bounding boxes for each of your images in your dataset
+- The tool will generate a mapping xml file with the bounding box coordinate for each custom class you have created for your dataset
+- Here is an example of what the xml output from labelImg will look like
+```
+<annotation>
+	<folder>images</folder>
+	<filename>hardhat1.jpg</filename>
+	<path>/Users/jeff/git_repo/sandbox/wu/playbox/ml/TensorFlow/workspace/training_demo/images/hardhat1.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>800</width>
+		<height>600</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>hard-hat</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>145</xmin>
+			<ymin>37</ymin>
+			<xmax>453</xmax>
+			<ymax>231</ymax>
+		</bndbox>
+	</object>
+</annotation>
+```
 
-node webcam.js inference_graph/saved_saved_model/
+- Depending on which tool you use to label your dataset, the xml format will vary but the neccessary information are there for converting to cvs in the following steps
+- Pre_process.js script currently supports both labelImg and MVI formats conversion
+- Now is a good time to create a labelmap.pbtxt file which will be needed for training the model in a later step.  This file should contain the custom classes you have defined for labeling the dataset.  Here is an example of a lablemap.pbtxt file:
+```
+  item {
+    name: "none_of_the_above"
+    id: 0
+    display_name: "background"
+  }
+  item {
+    id: 1
+    name: 'hard-hat'
+    display_name: "hardhat"
+  }
+```
 
-npm run pre_process --task=build_all --image_dir=/Users/jeff/Downloads/demo-model/poor
-npm run pre_process --task=build_all --image_dir=/Users/jeff/Downloads/demo-model/good -Origin=maximo
+## Step 4 (optional)
+- If you would like to partition your dataset into test and train model, run the following command
 
-npm run pre_process --trained_checkpoint_dir=/Users/jeff/Downloads/demo-model/poor/training --pipeline_config_path=/Users/jeff/Downloads/demo-model/poor/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --output_directory=/Users/jeff/Downloads/demo-model/poor/inference_graph --task=export_inference_graph
+  ```npm run prec_process --task=partition_dataset --image_dir=<my_dataset>```
 
-npm run pre_process --task=tflite_converter --saved_model_dir=/Users/jeff/Downloads/demo-model/poor/inference_graph/saved_model/ --output_path=/Users/jeff/Downloads/
+## Step 5
+- Convert xml to cvs files which are needed by generate_tfrecord.py to generate TFRecord
 
-tensorboard --logdir=/Users/jeff/Downloads/Demoaugmented/training/train 
-tensorboard --logdir=/Users/jeff/Downloads/demo-model/poor/training/train
+  ```npm run pre-process --image_dir=<my_dataset> --task=xml_to_csv```     
+  ```npm run pre-process --image_dir=<my_dataset> --task=xml_to_csv --origin=maximo```     
 
-https://www.digikey.com/en/maker/projects/how-to-perform-object-detection-with-tensorflow-lite-on-raspberry-pi/b929e1519c7c43d5b2c6f89984883588
-https://blog.roboflow.com/run-tensorflow-js-on-nvidia-jetson/
+## Step 6
+- To generate the TFRecord that we can use to train the model, run the following command
 
-https://hub.docker.com/r/onerhao/ubuntu-dev
+  ```npm run pre_process --task=generate_tfrecord --image_dir=<my_dataset>/train  --csv_input=<my_dataset/train/labels.csv --output_path=<my_dataset>/train/train.tfrecord```
 
-sudo apt install v4l-utils
-v4l2-ctl --list-devices
