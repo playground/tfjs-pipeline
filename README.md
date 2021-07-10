@@ -86,5 +86,5 @@ pre_process.js is script that provides the sub-processes that will help you thro
 ## Step 6
 - To generate the TFRecord that we can use to train the model, run the following command
 
-  ```npm run pre_process --task=generate_tfrecord --image_dir=<my_dataset>/train  --csv_input=<my_dataset/train/labels.csv --output_path=<my_dataset>/train/train.tfrecord```
+  ```npm run pre_process --task=generate_tfrecords --image_dir=<my_dataset>```
 

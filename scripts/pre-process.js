@@ -268,7 +268,7 @@ let build = {
       }
 
       let arg = `python ${__dirname}/tflite_converter.py --saved_model_dir=${saved_model_dir} --output_path=${output_path}`;
-      exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
+      exec(arg, {maxBuffer: 1024 * 1024 * 1024 * 2}, (err, stdout, stderr) => {
         if(!err) {
           console.log(`done coverting saved model to ${output_path}`);
           observer.next();
@@ -287,15 +287,17 @@ let build = {
       }
       let csv_input = `${image_dir}/train/labels.csv`;
       let output_path = `${image_dir}/train/train.tfrecord`;
+      let train_image_dir = `${image_dir}/train`;
 
-      let arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${image_dir} --output_path=${output_path}`;
+      let arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${train_image_dir} --output_path=${output_path}`;
       exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
         if(!err) {
           console.log(stdout)
           console.log(`done generating ${output_path}`);
           csv_input = `${image_dir}/test/labels.csv`;
           output_path = `${image_dir}/test/train.tfrecord`;
-          arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${image_dir} --output_path=${output_path}`;
+          train_image_dir = `${image_dir}/test`;
+          arg = `python ${__dirname}/generate_tfrecord.py --csv_input=${csv_input} --image_dir=${train_image_dir} --output_path=${output_path}`;
           exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
             if(!err) {
               console.log(stdout)
