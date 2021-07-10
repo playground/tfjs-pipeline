@@ -10,7 +10,7 @@ import argparse
 
 import pandas as pd
 
-import tensorflow as tf
+import tensorflow.compat.v2 as tf
 
 from PIL import Image
 from object_detection.utils import dataset_util
