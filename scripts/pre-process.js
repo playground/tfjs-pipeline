@@ -355,6 +355,16 @@ let build = {
       });
     });  
   },
+  tensorflowjs_convert: () => {
+    // tensorflowjs_converter \
+    // --input_format=tf_saved_model \
+    // --output_format=tfjs_graph_model \
+    // --saved_model_tags=serve \
+    // --control_flow_v2=True \
+    // --signature_name=serving_default \
+    // /Users/jeff/Downloads/demo-model/good/inference_graph/saved_model /Users/jeff/Downloads/TFConvertModel
+
+  },
   exit: (msg) => {
     console.log(msg);
     process.exit(0);
