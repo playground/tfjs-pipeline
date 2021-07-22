@@ -97,3 +97,6 @@ pre_process.js is script that provides the sub-processes that will help you thro
 - To generate inference graph from trained model, run the following command
 
   ```npm run pre_process --trained_checkpoint_dir=<my_dataset_dir>/training --pipeline_config_path=<my_dataset_dir>/pipeline.config --output_directory=<my_dataset_dir>/inference_graph --task=export_inference_graph
+
+docker cp  /Users/jeff/Downloads/demo-model/version_2/. pensive_keller:server/data-set/
+https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md

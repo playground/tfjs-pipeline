@@ -6,8 +6,8 @@ const { Observable, forkJoin } = require('rxjs');
 const cp = require('child_process'),
 exec = cp.exec;
 
-
 const task = process.env.npm_config_task || 'rename_maximo_assets';
+const modelODPath = `/server/models/research/object_detection/`;
 
 let build = {
   resize_image: () => {
@@ -47,15 +47,17 @@ let build = {
           let type = /\.[0-9a-z]{1,5}$/i.exec(info.original_file_name)[0];
           let name = info.original_file_name.replace(type, '');
           let idtuple = /^[^-]*/.exec(info._id)[0];
-          // console.log(`${path}/${info._id}${type}`, `${path}/${info.original_file_name}`)
-          // console.log(`${path}/${info._id}.xml`, `${path}/${name}.xml`)
+          if(info.original_file_name === '0001.jpg') {
+            console.log(`${path}/${info._id}${type}`, `${path}/${info.original_file_name}`)
+            console.log(`${path}/${info._id}.xml`, `${path}/${name}.xml`, idtuple)
+          }
           if(existsSync(`${path}/${info._id}.xml`) && existsSync(`${path}/${info._id}${type}`)) {
             renameSync(
               `${path}/${info._id}${type}`, 
-              `${path}/${name}-${idtuple}${type}`);
+              `${path}/${name}${type}`);
             renameSync(
               `${path}/${info._id}.xml`, 
-              `${path}/${name}-${idtuple}.xml`);
+              `${path}/${name}.xml`);
             count++;
           }    
         })
@@ -147,7 +149,7 @@ let build = {
       }
       ['train', 'test'].forEach((target) => {
         const dir = `${path}/${target}`;
-        console.log(target, origin)
+        console.log(path, target, origin)
         let files = readdirSync(dir);
         xmls = files.filter((file) => file.indexOf('.xml') > 0);
         // console.log(xmls)
@@ -267,7 +269,7 @@ let build = {
         build.exit('--output_path & --saved_model_dir are required.')
       }
 
-      let arg = `python ${__dirname}/tflite_converter.py --saved_model_dir=${saved_model_dir} --output_path=${output_path}`;
+      let arg = `python ${modelODPath}/tflite_converter.py --saved_model_dir=${saved_model_dir} --output_path=${output_path}`;
       exec(arg, {maxBuffer: 1024 * 1024 * 1024 * 2}, (err, stdout, stderr) => {
         if(!err) {
           console.log(`done coverting saved model to ${output_path}`);
@@ -319,7 +321,7 @@ let build = {
       const pipeline_config_path = process.env.npm_config_pipeline_config_path;
       const model_dir = process.env.npm_config_model_dir;
 
-      let arg = `python ${__dirname}/model_main_tf2.py --pipeline_config_path=${pipeline_config_path} --model_dir=${model_dir} --alsologtostderr`;
+      let arg = `python ${modelODPath}/model_main_tf2.py --pipeline_config_path=${pipeline_config_path} --model_dir=${model_dir} --alsologtostderr`;
       let childProcess = exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
         if(!err) {
           console.log(stdout)
@@ -342,7 +344,7 @@ let build = {
       const pipeline_config_path = process.env.npm_config_pipeline_config_path;
       const output_directory = process.env.npm_config_output_directory;
 
-      let arg = `python ${__dirname}/exporter_main_v2.py --trained_checkpoint_dir=${trained_checkpoint_dir} --pipeline_config_path=${pipeline_config_path} --output_directory ${output_directory}`;
+      let arg = `python ${modelODPath}/exporter_main_v2.py --trained_checkpoint_dir=${trained_checkpoint_dir} --pipeline_config_path=${pipeline_config_path} --output_directory ${output_directory}`;
       exec(arg, {maxBuffer: 1024 * 2000}, (err, stdout, stderr) => {
         if(!err) {
           console.log(stdout)
