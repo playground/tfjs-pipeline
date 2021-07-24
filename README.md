@@ -100,3 +100,8 @@ pre_process.js is script that provides the sub-processes that will help you thro
 
 docker cp  /Users/jeff/Downloads/demo-model/version_2/. pensive_keller:server/data-set/
 https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
+
+docker run -it --cpu-period=100000 --cpu-quota=50000 --rm tfjs-pipeline
+docker run -it --memory="6g" --memory-swap="40g" --memory-swappiness="100" --rm tfjs-pipeline
+npm run pre_process --task=train_model --pipeline_config_path=/server/data-set/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/server/data-set/training
+npm run pre_process --task=build_all --image_dir=/server/data-set --origin=maximo

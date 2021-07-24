@@ -7,7 +7,7 @@ const cp = require('child_process'),
 exec = cp.exec;
 
 const task = process.env.npm_config_task || 'rename_maximo_assets';
-const modelODPath = `/server/models/research/object_detection/`;
+const modelODPath = `/server/models/research/object_detection`;
 
 let build = {
   resize_image: () => {

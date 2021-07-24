@@ -1,13 +1,17 @@
-FROM ubuntu:21.04
+FROM ubuntu:18.04
 
 # Set timezone:
 RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONTAINER_TIMEZONE > /etc/timezone
 
 #ARG SSH_PRIVATE_KEY
-RUN apt-get update && apt-get install -y tzdata \
-  && apt-get install python3 python3-pip curl build-essential openssh-client git vim protobuf-compiler \
+RUN apt-get update && apt-get install -y tzdata curl \
+  && curl https://bootstrap.pypa.io/pip/3.5/get-pip.py -o get-pip.py \
+  && apt-get install python3 python3-pip python3-setuptools -y \
+  && python3 get-pip.py pip==20.3.4 \
+  && apt-get install build-essential openssh-client git vim protobuf-compiler \
   libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6 -y
-RUN pip3 install --no-cache --upgrade pip setuptools Pillow tensorflow-object-detection-api pandas && ln -sf python3 /usr/bin/python
+RUN pip3 install --no-cache --upgrade pip Pillow tensorflow-object-detection-api pandas
+RUN ln -sf python3 /usr/bin/python
 RUN curl -sL https://deb.nodesource.com/setup_16.x  | bash
 RUN apt-get -yq install nodejs
 WORKDIR /server
