@@ -75,16 +75,33 @@ pre_process.js is script that provides the sub-processes that will help you thro
 ## Step 4 (optional)
 - If you would like to partition your dataset into test and train model, run the following command
 
-  ```npm run prec_process --task=partition_dataset --image_dir=<my_dataset>```
+  ```npm run prec_process --task=partition_dataset --image_dir=<my_dataset_dir>```
 
 ## Step 5
 - Convert xml to cvs files which are needed by generate_tfrecord.py to generate TFRecord
 
-  ```npm run pre-process --image_dir=<my_dataset> --task=xml_to_csv```     
-  ```npm run pre-process --image_dir=<my_dataset> --task=xml_to_csv --origin=maximo```     
+  ```npm run pre-process --image_dir=<my_dataset_dir> --task=xml_to_csv```     
+  ```npm run pre-process --image_dir=<my_dataset_dir> --task=xml_to_csv --origin=maximo```     
 
 ## Step 6
 - To generate the TFRecord that we can use to train the model, run the following command
 
-  ```npm run pre_process --task=generate_tfrecords --image_dir=<my_dataset>```
+  ```npm run pre_process --task=generate_tfrecords --image_dir=<my_dataset_dir>```
 
+## Step 7
+- To train model, run the following commmand
+
+  ```npm run pre_process --task=train_model --pipeline_config_path=<my_dataset_dir>/pipeline.config --model_dir=<my_dataset_dir>/training```
+
+## Step 9
+- To generate inference graph from trained model, run the following command
+
+  ```npm run pre_process --trained_checkpoint_dir=<my_dataset_dir>/training --pipeline_config_path=<my_dataset_dir>/pipeline.config --output_directory=<my_dataset_dir>/inference_graph --task=export_inference_graph
+
+docker cp  /Users/jeff/Downloads/demo-model/version_2/. pensive_keller:server/data-set/
+https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
+
+docker run -it --cpu-period=100000 --cpu-quota=50000 --rm tfjs-pipeline
+docker run -it --memory="6g" --memory-swap="40g" --memory-swappiness="100" --rm tfjs-pipeline
+npm run pre_process --task=train_model --pipeline_config_path=/server/data-set/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/server/data-set/training
+npm run pre_process --task=build_all --image_dir=/server/data-set --origin=maximo
