@@ -96,12 +96,12 @@ pre_process.js is script that provides the sub-processes that will help you thro
 ## Step 9
 - To generate inference graph from trained model, run the following command
 
-  ```npm run pre_process --trained_checkpoint_dir=<my_dataset_dir>/training --pipeline_config_path=<my_dataset_dir>/pipeline.config --output_directory=<my_dataset_dir>/inference_graph --task=export_inference_graph
+  ```npm run pre_process --task=export_inference_graph --trained_checkpoint_dir=<my_dataset_dir>/training --pipeline_config_path=<my_dataset_dir>/pipeline.config --output_directory=<my_dataset_dir>/inference_graph```
 
-docker cp  /Users/jeff/Downloads/demo-model/version_2/. pensive_keller:server/data-set/
-https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/tf2_detection_zoo.md
+## Build Docker Image
 
-docker run -it --cpu-period=100000 --cpu-quota=50000 --rm tfjs-pipeline
-docker run -it --memory="6g" --memory-swap="40g" --memory-swappiness="100" --rm tfjs-pipeline
-npm run pre_process --task=train_model --pipeline_config_path=/server/data-set/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/server/data-set/training
-npm run pre_process --task=build_all --image_dir=/server/data-set --origin=maximo
+```docker build --ssh github=$HOME/.ssh/id_rsa -t tfjs-pipeline-ubuntu-2104 .```
+
+## Train model in docker container
+```docker run -it --rm --privileged -v <PATH_TO_DATASET> playbox21/tfjs-pipeline-ubuntu-1804:1.0.0```
+
