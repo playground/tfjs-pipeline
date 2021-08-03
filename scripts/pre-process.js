@@ -179,6 +179,18 @@ let build = {
         let xmljson = JSON.parse(convert.xml2json(xml, {compact: true, space: 2}));
         // console.log(xmljson.annotation.object)
         let filename = xmljson.annotation.filename._text;
+        if(filename.indexOf('.') < 0) {
+          if(existsSync(`${dir}/${filename}.jpg`)) {
+            filename += '.jpg';
+          } else if(existsSync(`${dir}/${filename}.png`)) {
+            filename += '.png';
+          } else if(existsSync(`${dir}/${filename}.gif`)) {
+            filename += '.gif';
+          } else {
+            console.log(`file not file ${filename}`);
+            process.exit(0);
+          }
+        }
         let object = xmljson.annotation.object;
         let size = xmljson.annotation.size;  
         if(!Array.isArray(object)) {

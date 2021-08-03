@@ -7,7 +7,9 @@ RUN ln -snf /usr/share/zoneinfo/$CONTAINER_TIMEZONE /etc/localtime && echo $CONT
 RUN apt-get update && apt-get install -y tzdata \
   && apt-get install python3 python3-pip curl build-essential openssh-client git vim protobuf-compiler \
   libgl1-mesa-glx libglib2.0-0 libsm6 libxrender1 libxext6 -y
-RUN pip3 install --no-cache --upgrade pip setuptools Pillow tensorflow-object-detection-api pandas && ln -sf python3 /usr/bin/python
+RUN pip3 install --no-cache --upgrade pip setuptools Pillow tensorflow-object-detection-api pandas
+RUN ln -sf python3 /usr/bin/python
+
 RUN curl -sL https://deb.nodesource.com/setup_16.x  | bash
 RUN apt-get -yq install nodejs
 WORKDIR /server
