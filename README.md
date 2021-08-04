@@ -105,3 +105,6 @@ pre_process.js is script that provides the sub-processes that will help you thro
 ## Train model in docker container
 ```docker run -it --rm --privileged -v <PATH_TO_DATASET> playbox21/tfjs-pipeline-ubuntu-1804:1.0.0```
 
+## Or you can pull from docker hub
+```docker pull playbox21/tfjs-pipeline-ubuntu-1804:1.0.0```
+```docker pull playbox21/tfjs-pipeline-ubuntu-2104:1.0.0```
