@@ -19,6 +19,7 @@ RUN npm install
 
 RUN pip3 install tensorflow
 RUN python3 -c "import tensorflow"
+RUN ln -sf python3 /usr/bin/python
 
 RUN mkdir -m 700 /root/.ssh; \
   touch -m 600 /root/.ssh/known_hosts; \

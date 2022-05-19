@@ -179,6 +179,7 @@ let build = {
         let xmljson = JSON.parse(convert.xml2json(xml, {compact: true, space: 2}));
         // console.log(xmljson.annotation.object)
         let filename = xmljson.annotation.filename._text;
+        filename = filename.indexOf('.') > 0 ? filename : `${filename}.jpg`;
         let object = xmljson.annotation.object;
         let size = xmljson.annotation.size;  
         if(!Array.isArray(object)) {
