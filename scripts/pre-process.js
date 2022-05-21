@@ -141,7 +141,7 @@ let build = {
   xml_to_csv: () => {
     return new Observable((observer) => {
       const path = process.env.npm_config_image_dir;
-      const origin = process.env.npm_config_origin;
+      const origin = process.env.npm_config_origin || ''; //maximo or ''
       let xmls, csv = '';
       let $call = [];
       if(!path) {
@@ -182,6 +182,8 @@ let build = {
         if(filename.indexOf('.') < 0) {
           if(existsSync(`${dir}/${filename}.jpg`)) {
             filename += '.jpg';
+          } else if(existsSync(`${dir}/${filename}.jpeg`)) {
+            filename += '.jpeg';
           } else if(existsSync(`${dir}/${filename}.png`)) {
             filename += '.png';
           } else if(existsSync(`${dir}/${filename}.gif`)) {
