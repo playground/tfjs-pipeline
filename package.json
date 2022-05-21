@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "pre_process": "scripts/pre-process.js",
-    "build_all": "npm run pre_process --image_dir=<P> --task=build_all --Origin=maximo",
+    "build_all": "npm run pre_process --image_dir=<P> --task=build_all",
+    "resize_images": "npm run pre_process --task=resize_image --image_dir=<P> --width=800 --height=600",
     "generate_tfrecords": "npm run pre_process --task=generate_tfrecords",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
