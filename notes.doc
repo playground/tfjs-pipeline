@@ -20,7 +20,7 @@ npm run pre_process --task=build_all --image_dir=/docuall/entity
 
 npm run pre_process --task=train_model --pipeline_config_path=/docuall/entity/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/docuall/entity/training
 
-npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/entity/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/entity/training --output_directory=/docuall/entity/inference_graph --imAge_dir=/docuall/entity
+npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/entity/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/entity/training --output_directory=/docuall/entity/inference_graph --image_dir=/docuall/entity
 
 ```docker run -it --memory="9000000000" --memory-swap="15000000000 --rm tfjs-pipeline```
 ```docker run -it --memory="8g" --memory-swap="15g" --memory-swappiness="100" --rm tfjs-pipeline```
