@@ -28,7 +28,7 @@ npm run pre_process --task=export_inference_graph --pipeline_config_path=/docual
 
 ===============
 docker run -it --rm --memory="10g" --memory-swap="60g" -v /Users/jeff/Downloads/docuall:/docuall --privileged playbox21/tfjs-pipeline-1804:1.0.3
-python /server/scripts/resize_images.py -d images/ -s 800 600
+python /server/scripts/resize_images.py -d /docuall/images/ -s 800 600
 npm run pre_process --task=build_all --image_dir=/docuall/bank_of_america
 npm run pre_process --task=train_model --pipeline_config_path=/docuall/bank_of_america/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/docuall/bank_of_america/training --image_dir=/docuall/bank_of_america
 npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/bank_of_america/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/bank_of_america/training --output_directory=/docuall/bank_of_america/inference_graph --imAge_dir=/docuall/bank_of_america
