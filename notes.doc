@@ -1,6 +1,6 @@
 docker build --ssh github=$HOME/.ssh/id_rsa -t playbox21/tfjs-pipeline-1804:1.0.2 -f Dockerfile-ubuntu-1804 .
 
-docker run -ti --rm --priveleged \
+docker run -ti --rm --privileged \
         -e DISPLAY=$DISPLAY \
         --device=/dev/video0:/dev/video0 \
         -v /tmp/.X11-unix:/tmp/.X11-unix \
@@ -8,6 +8,7 @@ docker run -ti --rm --priveleged \
         ludwigprager/labelimg:1
 
 git clone http://github.com/tzutalin/labelImg.git
+python3 -m pip install --upgrade pip
 pip3 install labelImg
 make qt5py3
 ~/git_repo/sandbox/labelImg   master  python3 labelImg.py
