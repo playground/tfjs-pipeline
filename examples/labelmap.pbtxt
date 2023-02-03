@@ -1,0 +1,30 @@
+item {
+  name: "none_of_the_above"
+  id: 0
+  display_name: "background"
+}
+item {
+  name: "butterfly"
+  id: 1
+  display_name: "butterfly"
+}
+item {
+  name: "dragonfly"
+  id: 2
+  display_name: "dragonfly"
+}
+item {
+  name: "grasshopper"
+  id: 3
+  display_name: "grasshopper"
+}
+item {
+  name: "ladybug"
+  id: 4
+  display_name: "ladybug"
+}
+item {
+  name: "mosquito"
+  id: 5
+  display_name: "mosquito"
+}
