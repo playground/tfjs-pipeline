@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-const {renameSync, readdirSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} = require('fs');
+const {renameSync, readdir, readdirSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} = require('fs');
 const jsonfile = require('jsonfile');
 const convert = require('xml-js');
 const { Observable, forkJoin } = require('rxjs');
@@ -8,6 +8,10 @@ exec = cp.exec;
 
 const task = process.env.npm_config_task || 'rename_maximo_assets';
 const modelODPath = `/server/models/research/object_detection`;
+let imagePath = process.env.npm_config_image_path;
+const label = process.env.npm_config_label;
+let folder = process.env.npm_config_folder || imagePath.split("/").pop();
+let imageRefFolder = process.env.npm_config_image_ref_folder; 
 
 let build = {
   resize_image: () => {
@@ -380,6 +384,46 @@ let build = {
     // --signature_name=serving_default \
     // /Users/jeff/Downloads/demo-model/good/inference_graph/saved_model /Users/jeff/Downloads/TFConvertModel
 
+  },
+  generate_labels:() => {
+    return new Observable((observer) => {
+      if(label && imagePath) {
+        (async() => {
+          // console.log(process.cwd(), __dirname)
+          imagePath = imagePath.endsWith('/') ? imagePath.slice(0, -1) : imagePath;
+          let xml = readFileSync(`${__dirname}/label-template.xml`).toString();
+          console.log(folder)
+          let xmlOut = '';
+          let xmlName = '';
+          let outputPath = imageRefFolder ? imageRefFolder : imagePath;
+          outputPath = outputPath.endsWith('/') ? outputPath.slice(0, -1) : outputPath;
+          await readdir(imagePath, (err, files) => {
+            let images = files.filter((file) => file.match(/.jpg|.png|.jpeg/i));
+            images.forEach(image => {
+              console.log(image);
+              xmlOut = build.tokenReplace(xml, {folder: folder, label: label, filename: image, filepath: `${outputPath}/${image}`})
+              // console.log(xmlOut)
+              xmlName = image.replace(image.match(/\.[0-9a-z]+$/i)[0], '.xml')
+              console.log(xmlName)
+              writeFileSync(`${imagePath}/${xmlName}`, xmlOut);
+            });
+          });
+          observer.next();
+          observer.complete();
+        })();  
+      } else {
+        console.log('--label and --image_path are required');
+        observer.next();
+        observer.complete();
+      }
+    });
+  },
+  tokenReplace: (template, obj) => {
+    //  template = 'Where is ${movie} playing?',
+    //  tokenReplace(template, {movie: movie});
+    return template.replace(/\$\{([^\s\:\}]+)(?:\:([^\s\:\}]+))?\}/g, function(match, key) {
+      return obj[key];
+    });
   },
   exit: (msg) => {
     console.log(msg);
