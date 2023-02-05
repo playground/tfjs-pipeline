@@ -38,6 +38,6 @@ npm run pre_process --task=train_model --pipeline_config_path=/docuall/insects_v
 npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/insects_v1/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/insects_v1/training --output_directory=/docuall/insects_v1/inference_graph --model_dir=/docuall/insects_v1
 
 npm run pre_process --task=train_model --pipeline_config_path=/docuall/plants_v2/ssd_efficientdet_d0_256x256_coco17_tpu-8.config --model_dir=/docuall/plants_v2/training
-npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/plants_v2/ssd_efficientdet_d0_256x256_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/plants_v2/training --output_directory=/docuall/plants_v2/inference_graph --model_dir=/docuall/plants_v2
+npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/plants_v2/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/plants_v2/training --output_directory=/docuall/plants_v2/inference_graph --model_dir=/docuall/plants_v2
 
 npm run generate_labels --image_path=/Users/ljeff/Downloads/docuall/plants_v2 --label=potato_healthy --image_source_path=/Users/ljeff/Downloads/docuall/Plant_leave_diseases/Potato___healthy --count=100

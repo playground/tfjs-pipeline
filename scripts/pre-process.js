@@ -455,7 +455,6 @@ let build = {
   generateImage: (file) => {
     return new Observable((observer) => {
       let coord = {};
-      let offset = {x: imageSize.width - orgImage.width, y: imageSize.height - orgImage.height};
           let canvas = createCanvas(imageSize.width, imageSize.height);
           let ctx = canvas.getContext('2d');
           let ctxbg =  canvas.getContext('2d');
@@ -464,14 +463,16 @@ let build = {
           .then((background) => {
             ctxbg.drawImage(background, 0, 0, imageSize.width, imageSize.height);
             loadImage(`${imageSrcPath}/${file}`).then((img) => {
+              // console.log(img, img.width)
+              let offset = {x: imageSize.width - img.width, y: imageSize.height - img.height};
               coord.xmin = Math.floor(Math.random()*offset.x)
               coord.ymin = Math.floor(Math.random()*offset.y)
-              ctx.drawImage(img, coord.xmin, coord.ymin, orgImage.width, orgImage.height);
+              ctx.drawImage(img, coord.xmin, coord.ymin, img.width, img.height);
               let ext = file.match(/.jpg|.png|.jpeg/i)[0].toLowerCase()
               const buffer = canvas.toBuffer(imageTypes[ext])
               writeFileSync(`${imagePath}/${file}`, buffer);
-              coord.xmax = orgImage.width + coord.xmin;
-              coord.ymax = orgImage.height + coord.ymin; 
+              coord.xmax = img.width + coord.xmin;
+              coord.ymax = img.height + coord.ymin; 
               observer.next(coord);
               observer.complete();
             })
