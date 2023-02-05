@@ -430,7 +430,7 @@ let build = {
                 console.log(images)
                 Object.keys(images).forEach((image) => {
                   let coord = images[image];
-                  xmlOut = build.tokenReplace(xml, {folder: folder, label: label, filename: image, filepath: `${outputPath}/${image}`, xmin: coord.xmin, ymin: coord.ymin, xmax: coord.xmax, ymax: coord.ymax})
+                  xmlOut = build.tokenReplace(xml, {folder: folder, label: label, filename: image, filepath: `${outputPath}/${image}`, width: imageSize.width, height: imageSize.height, xmin: coord.xmin, ymin: coord.ymin, xmax: coord.xmax, ymax: coord.ymax})
                   // console.log(xmlOut)
                   xmlName = image.replace(image.match(/\.[0-9a-z]+$/i)[0], '.xml')
                   console.log(xmlName)
