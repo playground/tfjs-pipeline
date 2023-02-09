@@ -31,5 +31,13 @@ npm run pre_process --task=export_inference_graph --pipeline_config_path=/docual
 rename 's/^google/butterfly/' google*
 docker run -it --rm --memory="10g" --memory-swap="60g" -v /Users/jeff/Downloads/docuall:/docuall --privileged playbox21/tfjs-pipeline-1804:1.0.3
 python /server/scripts/resize_images.py -d images/ -s 800 600
-npm run pre_process --task=build_all --image_dir=/docuall/bank_of_america
-npm run pre_process --task=train_model --pipeline_config_path=/docuall/bank_of_america/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/docuall/bank_of_america/training --image_dir=/docuall/bank_of_america
+npm run generate_labels --image_path=/Users/ljeff/Downloads/docuall/Plant_leave_diseases/Potato___healthy --label=potato_healthy --folder=plants_v2 --image_ref_folder=/Users/ljeff/Downloads/docuall/plants_v2
+Note:  Don't forget to update generate_tfrecord.py with proper row_labels
+npm run pre_process --task=build_all --image_dir=/docuall/insects_v1
+npm run pre_process --task=train_model --pipeline_config_path=/docuall/insects_v1/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --model_dir=/docuall/insects_v1/training
+npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/insects_v1/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/insects_v1/training --output_directory=/docuall/insects_v1/inference_graph --model_dir=/docuall/insects_v1
+
+npm run pre_process --task=train_model --pipeline_config_path=/docuall/plants_v2/ssd_efficientdet_d0_256x256_coco17_tpu-8.config --model_dir=/docuall/plants_v2/training
+npm run pre_process --task=export_inference_graph --pipeline_config_path=/docuall/plants_v2/ssd_efficientdet_d0_512x512_coco17_tpu-8.config --trained_checkpoint_dir=/docuall/plants_v2/training --output_directory=/docuall/plants_v2/inference_graph --model_dir=/docuall/plants_v2
+
+npm run generate_labels --image_path=/Users/ljeff/Downloads/docuall/plants_v2 --label=potato_healthy --image_source_path=/Users/ljeff/Downloads/docuall/Plant_leave_diseases/Potato___healthy --count=100

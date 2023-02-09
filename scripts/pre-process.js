@@ -1,13 +1,33 @@
 #! /usr/bin/env node
-const {renameSync, readdirSync, copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} = require('fs');
+const {renameSync, readdir, readdirSync, copyFileSync, existsSync, mkdirSync, readFile, readFileSync, writeFileSync} = require('fs');
 const jsonfile = require('jsonfile');
 const convert = require('xml-js');
 const { Observable, forkJoin } = require('rxjs');
+const {createCanvas, Image, loadImage} = require('canvas');
 const cp = require('child_process'),
 exec = cp.exec;
 
 const task = process.env.npm_config_task || 'rename_maximo_assets';
 const modelODPath = `/server/models/research/object_detection`;
+const count = process.env.npm_config_count || 100;
+let imageSrcPath = process.env.npm_config_image_source_path;
+let imagePath = process.env.npm_config_image_path;
+const label = process.env.npm_config_label;
+let folder = process.env.npm_config_folder || imagePath.split("/").pop();
+let imageRefFolder = process.env.npm_config_image_ref_folder;
+let imageSize = {
+  width: 800,
+  height: 600
+}
+let orgImage = {
+  width: 256,
+  height: 256
+}
+let imageTypes = {
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png'
+}
 
 let build = {
   resize_image: () => {
@@ -380,6 +400,91 @@ let build = {
     // --signature_name=serving_default \
     // /Users/jeff/Downloads/demo-model/good/inference_graph/saved_model /Users/jeff/Downloads/TFConvertModel
 
+  },
+  generate_labels:() => {
+    return new Observable((observer) => {
+      if(label && imagePath && imageSrcPath) {
+        (async() => {
+          // console.log(process.cwd(), __dirname)
+          let total = +count;
+          let counter = 1;
+          imagePath = imagePath.endsWith('/') ? imagePath.slice(0, -1) : imagePath;
+          let xml = readFileSync(`${__dirname}/label-template.xml`).toString();
+          console.log(folder)
+          let xmlOut = '';
+          let xmlName = '';
+          let outputPath = imageRefFolder ? imageRefFolder : imagePath;
+          outputPath = outputPath.endsWith('/') ? outputPath.slice(0, -1) : outputPath;
+          imageSrcPath = imageSrcPath.endsWith('/') ? imageSrcPath.slice(0, -1) : imageSrcPath;
+          readdir(imageSrcPath, (err, files) => {
+            let images = files.filter((file) => file.match(/.jpg|.png|.jpeg/i));
+            let $images = {};
+            images.some(image => {
+              console.log(image);
+              $images[image] = build.generateImage(image);
+              return ++counter > total;
+            });
+            forkJoin($images)
+            .subscribe({
+              next: (images) => {
+                console.log(images)
+                Object.keys(images).forEach((image) => {
+                  let coord = images[image];
+                  xmlOut = build.tokenReplace(xml, {folder: folder, label: label, filename: image, filepath: `${outputPath}/${image}`, width: imageSize.width, height: imageSize.height, xmin: coord.xmin, ymin: coord.ymin, xmax: coord.xmax, ymax: coord.ymax})
+                  // console.log(xmlOut)
+                  xmlName = image.replace(image.match(/\.[0-9a-z]+$/i)[0], '.xml')
+                  console.log(xmlName)
+                  writeFileSync(`${imagePath}/${xmlName}`, xmlOut);  
+                })
+              },
+              complete: () => {
+                console.log('here')
+                observer.next();
+                observer.complete();                    
+              }
+            })
+          });
+        })();  
+      } else {
+        console.log('--label, --image_source_path and --image_path are required');
+        observer.next();
+        observer.complete();
+      }
+    });
+  },
+  generateImage: (file) => {
+    return new Observable((observer) => {
+      let coord = {};
+          let canvas = createCanvas(imageSize.width, imageSize.height);
+          let ctx = canvas.getContext('2d');
+          let ctxbg =  canvas.getContext('2d');
+          const cwd = process.cwd()
+          loadImage(`${cwd}/background-images/background_${Math.floor(Math.random()*10)}.jpg`)
+          .then((background) => {
+            ctxbg.drawImage(background, 0, 0, imageSize.width, imageSize.height);
+            loadImage(`${imageSrcPath}/${file}`).then((img) => {
+              // console.log(img, img.width)
+              let offset = {x: imageSize.width - img.width, y: imageSize.height - img.height};
+              coord.xmin = Math.floor(Math.random()*offset.x)
+              coord.ymin = Math.floor(Math.random()*offset.y)
+              ctx.drawImage(img, coord.xmin, coord.ymin, img.width, img.height);
+              let ext = file.match(/.jpg|.png|.jpeg/i)[0].toLowerCase()
+              const buffer = canvas.toBuffer(imageTypes[ext])
+              writeFileSync(`${imagePath}/${file}`, buffer);
+              coord.xmax = img.width + coord.xmin;
+              coord.ymax = img.height + coord.ymin; 
+              observer.next(coord);
+              observer.complete();
+            })
+          }) 
+    })  
+  },
+  tokenReplace: (template, obj) => {
+    //  template = 'Where is ${movie} playing?',
+    //  tokenReplace(template, {movie: movie});
+    return template.replace(/\$\{([^\s\:\}]+)(?:\:([^\s\:\}]+))?\}/g, function(match, key) {
+      return obj[key];
+    });
   },
   exit: (msg) => {
     console.log(msg);
