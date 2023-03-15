@@ -1,8 +1,8 @@
 #! /usr/bin/env node
-const {renameSync, readdir, readdirSync, copyFileSync, existsSync, mkdirSync, readFile, readFileSync, writeFileSync} = require('fs');
+const {renameSync, readdir, readdirSync, copyFileSync, copyFile, existsSync, mkdirSync, openSync, readFile, readFileSync, writeFileSync, writeFile} = require('fs');
 const jsonfile = require('jsonfile');
 const convert = require('xml-js');
-const { Observable, forkJoin } = require('rxjs');
+const { Observable, forkJoin, bindCallback } = require('rxjs');
 const {createCanvas, Image, loadImage} = require('canvas');
 const cp = require('child_process'),
 exec = cp.exec;
@@ -32,7 +32,7 @@ let imageTypes = {
 let build = {
   resize_image: () => {
     return new Observable((observer) => {
-      const image_dir = process.env.npm_config_image_dir;
+      const image_dir = process.env.npm_config_image_dir || imagePath; 
       const height = process.env.npm_config_height;
       const width = process.env.npm_config_width;
 
@@ -54,7 +54,7 @@ let build = {
   },
   rename_maximo_assets: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_image_dir;
+      const path = process.env.npm_config_image_dir || imagePath;
       let count = 0;
       if(!path) {
         build.exit('path is required, provide --image_dir=...');
@@ -91,7 +91,7 @@ let build = {
   },
   rename_maximo_assets2: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_image_dir;
+      const path = process.env.npm_config_image_dir || imagePath;
       let count = 0;
       if(!path) {
         build.exit('path is required, provide --image_dir=...');
@@ -125,7 +125,7 @@ let build = {
   },
   partition_dataset: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_image_dir;
+      const path = process.env.npm_config_image_dir || imagePath;
     if(!path) {
       build.exit('path is required, provide --image_dir=...');
     }
@@ -160,7 +160,7 @@ let build = {
   },
   xml_to_csv: () => {
     return new Observable((observer) => {
-      const path = process.env.npm_config_image_dir;
+      const path = process.env.npm_config_image_dir || imagePath;
       const origin = process.env.npm_config_origin || ''; //maximo or ''
       let xmls, csv = '';
       let $call = [];
@@ -190,6 +190,183 @@ let build = {
         // console.log(data[1], data.length)
       })
     });  
+  },
+  xml_to_txt: () => {
+    return new Observable((observer) => {
+      const path = process.env.npm_config_image_dir || imagePath;
+      const origin = process.env.npm_config_origin || ''; //maximo or ''
+      let xmls, csv = '';
+      let $call = [];
+      if(!path) {
+        build.exit('path is required, provide --image_dir=... --origin=...');
+      }
+      ['images', 'labels'].forEach((dir) => {
+        if(!existsSync(`${path}/${dir}`)) {
+          mkdirSync(`${path}/${dir}`)
+        }  
+      })      
+      console.log(path, origin)
+      let files = readdirSync(path);
+      xmls = files.filter((file) => file.indexOf('.xml') > 0);
+      // console.log(xmls)
+      if(origin && origin.toLowerCase() === 'maximo') {
+        $call.push(build.maximo_to_yolo(xmls, path));
+      } else {
+        $call.push(build.tfjs_to_yolo(xmls, path));
+      }
+      forkJoin($call)
+      .subscribe((data) => {
+        console.log('generating yolo for train and test');
+        observer.next();
+        observer.complete();
+      })
+    });  
+  },
+  tfjs_to_yolo: (xmls, path) => {
+    return new Observable((observer) => {
+      let $save = {};
+      try {
+        let classes = readFileSync(`${path}/classes.txt`).toString().split('\n')
+        console.log(classes)
+
+        xmls.forEach(async(name, i) => {
+          let xml = readFileSync(`${path}/${name}`);
+          let xmljson = JSON.parse(convert.xml2json(xml, {compact: true, space: 2}));
+          // console.log(xmljson.annotation.object)
+          let filename = xmljson.annotation.filename._text;
+          if(filename.indexOf('.') < 0) {
+            if(existsSync(`${path}/${filename}.jpg`)) {
+              filename += '.jpg';
+            } else if(existsSync(`${path}/${filename}.jpeg`)) {
+              filename += '.jpeg';
+            } else if(existsSync(`${path}/${filename}.png`)) {
+              filename += '.png';
+            } else if(existsSync(`${path}/${filename}.gif`)) {
+              filename += '.gif';
+            } else {
+              console.log(`file not file ${filename}`);
+              process.exit(0);
+            }
+          }
+          let object = xmljson.annotation.object;
+          let size = xmljson.annotation.size;  
+          if(!Array.isArray(object)) {
+            object = [object];
+          }
+          let ext, label, txt = '';
+          object.forEach((obj, idx) => {
+            let bbox = obj.bndbox;
+            let index = classes.findIndex((el) => el == obj.name._text);
+            ext = filename.match(/\.[^.]*$/);
+            label = filename.replace(ext, '.txt');
+            txt += `${index} ${bbox.xmin._text} ${bbox.ymin._text} ${bbox.xmax._text} ${bbox.ymax._text}`;
+            if(idx < object.length) {
+              txt += '\n'
+            }
+          })
+          //writeFileSync(`${path}/labels/${label}`, txt)
+          //copyFileSync(`${path}/${filename}`, `${path}/images/${filename}`)
+          $save[label] = new Observable((obs) => {writeFile(`${path}/labels/${label}`, txt, (err) => {obs.next('done'); obs.complete();})})
+          $save[filename] = new Observable((obs) => {copyFile(`${path}/${filename}`, `${path}/images/${filename}`, err => {obs.next('done'); obs.complete();})})
+        })
+        forkJoin($save)
+        .subscribe({
+          next: (save) => console.log(Object.keys(save).length),
+          complete: () => {
+            observer.next()
+            observer.complete()
+          },
+          error: (err) => observer.error(err)
+        })
+
+      } catch(e) {
+        build.exit(`Error: ${e}`)
+      }
+    });
+  }, 
+  maximo_to_yolo: (xmls, path) => {
+    return new Observable((observer) => {
+      let $save = {};
+      try {
+        let classes = readFileSync(`${path}/classes.txt`).toString().split('\n')
+        console.log(classes, xmls.length)
+        let json = jsonfile.readFileSync(`${path}/prop.json`);
+        if(classes && json) {
+          xmls.forEach((name, i) => {
+            let xml = readFileSync(`${path}/${name}`);
+            let xmljson = JSON.parse(convert.xml2json(xml, {compact: true, space: 2}));
+            // console.log(xmljson.annotation.object)
+            let object = xmljson.annotation.object;
+            let size = xmljson.annotation.size;  
+
+            if (json) {
+              let props = JSON.parse(json['file_prop_info']);
+              if(!Array.isArray(object)) {
+                object = [object];
+              }
+              let prop, ext, label, orgname, fileid, txt = '';
+              object.forEach((obj, idx) => {
+                prop = props.filter((f) => f._id === obj.file_id._text);
+                if(prop.length != 1) {
+                  build.exit(`file mismatched or duplicated: ${prop[0]._id}, ${prop[0].original_file_name}`);
+                }
+                let bbox = obj.bndbox;
+                let index = classes.findIndex((el) => el == obj.name._text);
+    
+                if(index >= 0) {
+                  txt += `${index} ${bbox.xmin._text} ${bbox.ymin._text} ${bbox.xmax._text} ${bbox.ymax._text}`;
+                  if(idx < object.length) {
+                    txt += '\n'
+                  }
+                } else {
+                  build.exit(`class not found: ${obj.name}, ${prop[0].original_file_name}`);
+                }
+              })
+              //writeFileSync(`${path}/labels/${label}`, txt)
+              //copyFileSync(`${path}/${fileid}${ext[0]}`, `${path}/images/${orgname}`)
+              orgname = prop[0].original_file_name;
+              ext = orgname.match(/\.[^.]*$/);
+              label = orgname.replace(ext, '.txt');
+              fileid = prop[0]._id;
+              $save[fileid+i] = new Observable((obs) => {writeFile(`${path}/labels/${fileid}.txt`, txt, (err) => {obs.next(); obs.complete();})})
+              $save[fileid] = new Observable((obs) => {copyFile(`${path}/${fileid}${ext[0]}`, `${path}/images/${fileid}${ext[0]}`, err => {obs.next(); obs.complete();})})
+
+              //$save[fileid+i] = new Observable((obs) => {
+              //  (async() => {
+              //    console.log(`${path}/labels/${label}`, `${path}/${fileid}${ext[0]}`, i)
+              //    writeFileSync(`${path}/labels/${fileid}.txt`, txt)
+              //    obs.next()
+              //    obs.complete()
+              //  })()
+              //})
+              //$save[fileid] = new Observable((obs) => {
+              //  (async() => {
+              //    copyFileSync(`${path}/${fileid}${ext[0]}`, `${path}/images/${fileid}${ext[0]}`)
+              //    obs.next()
+              //    obs.complete()
+              //  })()
+              //})    
+            } else {
+              build.exit(json);
+            }    
+          })
+          forkJoin($save)
+          .subscribe({
+            next: (save) => console.log(Object.keys(save).length),
+            complete: () => {
+              console.log('complete')
+              observer.next()
+              observer.complete()
+            },
+            error: (err) => observer.error(err)
+          })
+        } else {
+          observer.error('Missing classes.txt')
+        }
+      } catch(e) {
+        build.exit(`Error: ${e}`)
+      }
+    });
   },
   tfjs: (xmls, dir, path) => {
     return new Observable((observer) => {
@@ -317,7 +494,7 @@ let build = {
   },
   generate_tfrecords: () => {
     return new Observable((observer) => {
-      const image_dir = process.env.npm_config_image_dir;
+      const image_dir = process.env.npm_config_image_dir || imagePath; 
       if(!image_dir) {
         build.exit('--image_dir is required.')
       }
